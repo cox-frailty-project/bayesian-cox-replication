@@ -39,6 +39,7 @@ Fitting takes about a minute with four chains.
 ## Repository layout
 
 ```
+data/          Data + Data sources
 stan/          Stan model
 analysis/      R Markdown notebook that fits the model and compares to the paper
 report/        Written report
