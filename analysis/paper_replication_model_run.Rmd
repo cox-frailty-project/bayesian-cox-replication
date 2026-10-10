@@ -1,0 +1,111 @@
+---
+title: "Bayesian Cox frailty model: basic run"
+output: html_document
+---
+
+```{r setup, message=FALSE}
+library(rstan)
+library(survival)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+
+## Data
+
+The `kidney` dataset from `survival`. The Stan model assumes rows are sorted by ascending time.
+
+```{r data}
+k <- survival::kidney
+k <- k[order(k$time), ]
+
+# Covariates exactly as in the paper: age in years, sex coded 1 = male, 2 = female,
+# 0/1 indicators for disease types GN, AN, PKD (Other is the baseline).
+X <- cbind(age = k$age,
+           sex = k$sex,
+           GN  = as.integer(k$disease == "GN"),
+           AN  = as.integer(k$disease == "AN"),
+           PKD = as.integer(k$disease == "PKD"))
+
+stan_data <- list(N   = nrow(k),
+                  M   = length(unique(k$id)),
+                  P   = ncol(X),
+                  t   = k$time,
+                  d   = k$status,
+                  pid = k$id,
+                  X   = X,
+                  tau = 2.5)
+```
+
+## Fit
+
+```{r fit, message=FALSE, warning=FALSE, results="hide"}
+fit <- stan(file = "../stan/frailty_cox_replication.stan",
+            data = stan_data,
+            seed = 1,
+            chains = 4,
+            iter = 2000,
+            refresh = 0)
+```
+
+## Results
+
+```{r summary}
+print(fit, pars = c("beta", "sigma2"), probs = c(0.025, 0.5, 0.975))
+```
+
+Paper values for comparison (McGilchrist & Aisbett 1991, Table 2): age 0.0063, sex -1.7947, GN 0.2062, AN 0.4099, PKD -1.2961, sigma^2 0.3821.
+
+```{r frailties}
+print(fit, pars = "Z", probs = c(0.025, 0.5, 0.975))
+```
+
+```{r diagnostics}
+traceplot(fit, pars = c("beta", "sigma"))
+```
+
+## Comparison with McGilchrist & Aisbett (1991)
+
+Regression estimates and SEs are transcribed from the paper into `data/paper_table2.csv`. The paper's patient frailties (Table 1) ship with the `kidney` dataset as the `frail` column, so they are read from there.
+
+```{r compare-coefs}
+paper <- read.csv("../data/paper_table2.csv")
+
+s <- summary(fit, pars = c("beta", "sigma2"), probs = c(0.025, 0.5, 0.975))$summary
+stan_res <- data.frame(parameter = paper$parameter,
+                       stan_mean   = s[, "mean"],
+                       stan_sd     = s[, "sd"],
+                       stan_median = s[, "50%"],
+                       ci_lo       = s[, "2.5%"],
+                       ci_hi       = s[, "97.5%"],
+                       rhat        = s[, "Rhat"],
+                       n_eff       = s[, "n_eff"],
+                       row.names = NULL)
+
+comp <- merge(paper, stan_res, by = "parameter", sort = FALSE)
+comp <- comp[match(paper$parameter, comp$parameter), ]
+comp$diff      <- comp$stan_mean - comp$estimate
+comp$paper_in_ci <- comp$estimate >= comp$ci_lo & comp$estimate <= comp$ci_hi
+
+comp
+```
+
+```{r compare-frailties, fig.width=5, fig.height=5}
+frail_paper <- unique(k[, c("id", "frail")])
+frail_paper <- frail_paper[order(frail_paper$id), ]
+
+Zs <- summary(fit, pars = "Z", probs = 0.5)$summary
+frail <- data.frame(patient  = frail_paper$id,
+                    Z_paper  = frail_paper$frail,
+                    Z_stan   = Zs[, "50%"],
+                    row.names = NULL)
+frail$diff <- frail$Z_stan - frail$Z_paper
+
+plot(frail$Z_paper, frail$Z_stan, pch = 19,
+     xlab = "Paper Z (Table 1)", ylab = "Stan posterior median Z",
+     xlim = c(0, 3.2), ylim = c(0, 3.2))
+abline(0, 1, lty = 2)
+
+round(cor(frail$Z_paper, frail$Z_stan), 3)
+
+frail
+```
