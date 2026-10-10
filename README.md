@@ -47,9 +47,9 @@ report/        Written report
 
 ## Authors
 
-Thauri Dattadeen
-Isac Sandberg Kanon
-Julius Searancke
+- Thauri Dattadeen
+- Julius Searancke
+- Isac Sandberg Kanon
 
 ## References
 
