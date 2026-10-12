@@ -3,10 +3,11 @@
 data {
   int<lower=1> N, M, P;                  // intervals, patients, covariates
   vector[N] t;                           // gap times, sorted ascending
-  array[N] int<lower=0, upper=1> d;      // 1 = infection, 0 = censored
+  array[N] int<lower=0, upper=1> D;      // 1 = infection, 0 = censored
   array[N] int<lower=1, upper=M> pid;    // patient_id for each interval
   matrix[N, P] X;                        // covariates- age,sex,disease type
-  real<lower=0> tau;                     // fixed prior sd of beta
+  real<lower=0> tau;                     // fixed prior sd of beta -
+                                         // arg incl. for sensitivity analysis
 }
 transformed data {
   // Breslow ties: Tied events are all compared against the same set of patients still at risk.
