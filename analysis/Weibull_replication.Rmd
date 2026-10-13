@@ -1,0 +1,68 @@
+---
+title: "Bayesian Prop Hazard w/ Frailty: Weibull"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rstan)
+library(survival)
+library(tidyverse)
+options(mc.cores = parallel::detectCores())
+```
+
+## Data
+
+```{r}
+## Importing it
+kidney_data <- kidney
+
+## Covariates defined to match the paper: age in years, sex coded 1 = male, 2 = female,
+## 0/1 indicators for disease types GN, AN, PKD ("Other" is the baseline).
+X <- cbind(age = kidney_data$age,
+           sex = kidney_data$sex,
+           GN  = as.integer(k$disease == "GN"),
+           AN  = as.integer(k$disease == "AN"),
+           PKD = as.integer(k$disease == "PKD"))
+
+## List format to align with the stan model
+stan_data <- list(N = length(kidney_data$id),
+                  M = length(unique(kidney_data$id)),
+                  P = ncol(X),
+                  t = k$time,
+                  C = k$status,
+                  id = k$id,
+                  X = X)
+```
+
+## Fit
+
+```{r, message=FALSE, warning=FALSE, results="hide"}
+fit <- stan(file = "Weibull_v1.stan",
+            data = stan_data,
+            seed = 1,
+            chains = 4,
+            iter = 2000,
+            refresh = 0)
+```
+
+## Results
+
+```{r}
+print(fit, pars = c("beta", "sigma2"), probs = c(0.025, 0.5, 0.975))
+```
+
+Paper values for comparison (McGilchrist & Aisbett 1991, Table 2): age 0.0063, sex -1.7947, GN 0.2062, AN 0.4099, PKD -1.2961, sigma^2 0.3821. Missing by some margin for a number of our estimates. 
+
+```{r}
+print(fit, pars = "Z", probs = c(0.025, 0.5, 0.975))
+```
+
+Paper values are 2.3, 1.9, 1.2, 0.5, 1.5, etc... There are some improvements needed to this model and therefore I'm not formalising the comparisons yet.
+
+## Diagnostics
+
+```{r diagnostics}
+traceplot(fit, pars = c("beta", "sigma"))
+rstan::get_num_divergent(fit)
+```
