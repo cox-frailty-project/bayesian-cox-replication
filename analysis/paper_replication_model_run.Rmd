@@ -61,6 +61,7 @@ print(fit, pars = "Z", probs = c(0.025, 0.5, 0.975))
 
 ```{r diagnostics}
 traceplot(fit, pars = c("beta", "sigma"))
+rstan::get_num_divergent(fit)
 ```
 
 ## Comparison with McGilchrist & Aisbett (1991)
@@ -97,6 +98,7 @@ Zs <- summary(fit, pars = "Z", probs = 0.5)$summary
 frail <- data.frame(patient  = frail_paper$id,
                     Z_paper  = frail_paper$frail,
                     Z_stan   = Zs[, "50%"],
+                    rhat     = Zs[, "Rhat"],
                     row.names = NULL)
 frail$diff <- frail$Z_stan - frail$Z_paper
 
