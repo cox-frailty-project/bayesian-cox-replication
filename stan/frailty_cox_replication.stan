@@ -1,9 +1,9 @@
 // Bayesian Cox model with shared Gaussian frailty (McGilchrist & Aisbett, 1991)
 // Requires data sorted by ascending time t.
 data {
-  int<lower=1> N, M, P;                  // intervals, patients, covariates
+  int<lower=1> M, N, P;                  // # of patients, total obs, # of covariates
   vector[N] t;                           // gap times, sorted ascending
-  array[N] int<lower=0, upper=1> D;      // 1 = infection, 0 = censored
+  array[N] int<lower=0, upper=1> C;      // 1 = infection, 0 = censored
   array[N] int<lower=1, upper=M> pid;    // patient_id for each interval
   matrix[N, P] X;                        // covariates- age,sex,disease type
   real<lower=0> tau;                     // fixed prior sd of beta -
@@ -33,7 +33,7 @@ model {
 
   // Cox log-partial likelihood (Breslow ties):
   for (k in 1:N)
-    if (d[k] == 1)
+    if (C[k] == 1)
       target += eta[k] - log_sum_exp(eta[first[k]:N]);
 }
 generated quantities {
