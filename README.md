@@ -41,6 +41,7 @@ Fitting takes about a minute with four chains.
 ```
 data/          Data + Data sources
 stan/          Stan model
+posteriordb/   PosteriorDB contribution
 analysis/      R Markdown notebook that fits the model and compares to the paper
 report/        Written report
 ```
