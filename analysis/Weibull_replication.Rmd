@@ -21,9 +21,9 @@ kidney_data <- kidney
 ## 0/1 indicators for disease types GN, AN, PKD ("Other" is the baseline).
 X <- cbind(age = kidney_data$age,
            sex = kidney_data$sex,
-           GN  = as.integer(k$disease == "GN"),
-           AN  = as.integer(k$disease == "AN"),
-           PKD = as.integer(k$disease == "PKD"))
+           GN  = as.integer(kidney_data$disease == "GN"),
+           AN  = as.integer(kidney_data$disease == "AN"),
+           PKD = as.integer(kidney_data$disease == "PKD"))
 
 ## List format to align with the stan model
 stan_data <- list(N = length(kidney_data$id),
