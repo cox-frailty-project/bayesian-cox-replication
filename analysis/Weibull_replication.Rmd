@@ -29,9 +29,9 @@ X <- cbind(age = kidney_data$age,
 stan_data <- list(N = length(kidney_data$id),
                   M = length(unique(kidney_data$id)),
                   P = ncol(X),
-                  t = k$time,
-                  C = k$status,
-                  id = k$id,
+                  t = kidney_data$time,
+                  C = kidney_data$status,
+                  id = kidney_data$id,
                   X = X)
 ```
 
