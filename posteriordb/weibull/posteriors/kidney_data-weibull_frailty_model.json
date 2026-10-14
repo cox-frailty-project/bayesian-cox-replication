@@ -1,0 +1,15 @@
+{
+  "name": "kidney_data-weibull_frailty_model",
+  "model_name": "weibull_frailty_model",
+  "data_name": "kidney_data",
+  "reference_posterior_name": null,
+  "dimensions": {
+    "shape": 1,
+    "log_scale_0": 1,
+    "beta": 5,
+    "u": 38,
+    "sigma": 1
+  },
+  "added_by": "Isac Kanon",
+  "added_date": "2026-10-14"
+}

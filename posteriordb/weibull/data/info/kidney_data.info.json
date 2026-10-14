@@ -1,0 +1,11 @@
+{
+  "name": "kidney_data",
+  "title": "Kidney Survival Data",
+  "description": "Data on kidney catheter infections and their reaccurance times. From the survival package in r",
+  "keywords": ["survival", "kidney", "infection", "weibull"],
+  "urls": "https://search.r-project.org/CRAN/refmans/survival/html/kidney.html",
+  "references": null,
+  "added_by": "Isac Kanon",
+  "added_date": "2026-10-14",
+  "data_file": "data/data/kidney_data.json"
+}

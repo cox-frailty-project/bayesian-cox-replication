@@ -1,0 +1,15 @@
+{
+  "name": "weibull_frailty_model",
+  "title": "Weibull estimation for frailty term hazard regression",
+  "description": "Weibull estimation of the frailty hazard regression formulated by C. A. McGilchrist and C. W. Aisbett (1991) for use with the Kidney dataset from the survival package in r",
+  "keywords": ["hazard regression", "frailty", "weibull", "regression"],
+  "urls": ["https://doi.org/10.2307/2532138", "https://search.r-project.org/CRAN/refmans/survival/html/kidney.html"],
+  "references": "mcgilchrist1991regression",
+  "added_by": "Isac Kanon",
+  "added_date": "2026-10-14",
+  "model_implementations": {
+    "stan": {
+      "model_code": "models/stan/weibull_frailty_model.stan"
+    }
+  }
+}
