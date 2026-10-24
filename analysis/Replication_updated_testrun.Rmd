@@ -1,0 +1,81 @@
+---
+title: "Bayesian Cox frailty model: basic run"
+output: html_document
+---
+
+```{r setup, message=FALSE}
+library(rstan)
+library(survival)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+
+## Data
+
+The `kidney` dataset from `survival`. The Stan model assumes rows are sorted by ascending time.
+
+```{r data}
+k <- survival::kidney
+k <- k[order(k$time), ]
+
+# Covariates exactly as in the paper: age in years, sex coded 1 = male, 2 = female,
+# 0/1 indicators for disease types GN, AN, PKD (Other is the baseline).
+X <- cbind(age = k$age,
+           sex = k$sex,
+           GN  = as.integer(k$disease == "GN"),
+           AN  = as.integer(k$disease == "AN"),
+           PKD = as.integer(k$disease == "PKD"))
+
+# Making an r matrix, it follows the convention for r as described in the paper
+r <- matrix(0,
+            byrow = T,
+            ncol = 38,
+            nrow = 76)
+r[cbind(1:nrow(k), k$id)] <- 1
+proper_r <- apply(r, 2, cumsum)
+proper_r <- rbind(0, proper_r[-nrow(proper_r), ])
+proper_r <- proper_r + 1 
+
+# Finding where the occurrences happen for the patients in the dataset
+dummy_for_a <- matrix(0, nrow = 38, ncol = 2)
+for (i in 1:38) {
+  dummy_for_a[i, ] <- which(k$id == i)
+}
+
+## Defining the data
+stan_data <- list(N = nrow(k),
+                  M = length(unique(k$id)),
+                  P = ncol(X),
+                  m = 2,
+                  C = k$status,
+                  pid = k$id,
+                  X = X,
+                  r = proper_r,
+                  a_ind = dummy_for_a,
+                  sigma = 0.5)
+```
+
+## Fit
+
+```{r fit, message=FALSE, warning=FALSE, results="hide"}
+fit <- stan("path",
+            data = stan_data,
+            seed = 1,
+            chains = 4,
+            iter = 5000,
+            refresh = 0,
+            verbose = T)
+```
+
+## Results
+
+```{r summary}
+print(fit, pars = c("beta", "sigma2"), probs = c(0.025, 0.5, 0.975))
+```
+
+Paper values for comparison (McGilchrist & Aisbett 1991, Table 2): age 0.0063, sex -1.7947, GN 0.2062, AN 0.4099, PKD -1.2961, sigma^2 0.3821.
+
+```{r frailties}
+print(fit, pars = "Z", probs = c(0.025, 0.5, 0.975))
+```
+
