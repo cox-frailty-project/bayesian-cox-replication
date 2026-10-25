@@ -33,24 +33,35 @@ stan_data <- list(N   = nrow(k),
                   C   = k$status,
                   pid = k$id,
                   X   = X,
-                  tau = 2.5)
+                  tau = 10,
+                  sigma = 1)
 ```
 
 ## Fit
 
-```{r fit, message=FALSE, warning=FALSE, results="hide"}
+```{r fit_sampling, message=FALSE, warning=FALSE, results="hide"}
 fit <- stan(file = "../stan/frailty_cox_replication.stan",
             data = stan_data,
             seed = 1,
             chains = 4,
-            iter = 2000,
+            iter = 5000,
             refresh = 0)
+```
+```{r fit_optimizing, message=FALSE, warning=FALSE, results="hide"}
+
+mode <- optimizing(stan_model("../stan/frailty_cox_replication.stan"),
+                   data = stan_data,
+                   seed = 1,
+                   iter = 100000)
+
+mode$par["sigma2"]
+round(mode$par[grep("^beta", names(mode$par))], 4)  # mode estimates of the coefficients
 ```
 
 ## Results
 
 ```{r summary}
-print(fit, pars = c("beta", "sigma2"), probs = c(0.025, 0.5, 0.975))
+print(fit, pars = c("beta"), probs = c(0.025, 0.5, 0.975))
 ```
 
 Paper values for comparison (McGilchrist & Aisbett 1991, Table 2): age 0.0063, sex -1.7947, GN 0.2062, AN 0.4099, PKD -1.2961, sigma^2 0.3821.
@@ -60,7 +71,7 @@ print(fit, pars = "Z", probs = c(0.025, 0.5, 0.975))
 ```
 
 ```{r diagnostics}
-traceplot(fit, pars = c("beta", "sigma"))
+traceplot(fit, pars = c("beta"))
 rstan::get_num_divergent(fit)
 ```
 
