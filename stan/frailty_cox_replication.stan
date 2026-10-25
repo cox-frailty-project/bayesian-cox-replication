@@ -6,38 +6,34 @@ data {
   array[N] int<lower=0, upper=1> C;      // 1 = infection, 0 = censored
   array[N] int<lower=1, upper=M> pid;    // patient_id for each interval
   matrix[N, P] X;                        // covariates- age,sex,disease type
+  real<lower=0> sigma;                   // fixed log-frailty sd
   real<lower=0> tau;                     // fixed prior sd of beta -
                                          // arg incl. for sensitivity analysis
-}
-transformed data {
-  // Breslow ties: Tied events are all compared against the same set of patients still at risk.
-  array[N] int first;                    // first row of each tie block
-  first[1] = 1;
-  for (k in 2:N)
-    first[k] = (t[k] == t[k - 1]) ? first[k - 1] : k;
 }
 parameters {
   vector[P] beta;                        // regression coeffs
   sum_to_zero_vector[M] u;               // log-frailties restriction [1'u = 0]
-  real<lower=0> sigma;                   // log-frailty sd
 }
 transformed parameters {
   vector[N] eta = X * beta + u[pid];     // linear substitution
 }
 model {
   // Priors
-  beta ~ normal(0, tau);                 // fixed-tau ridge prior
-  sigma ~ normal(0, 1);                  // half-normal via lower = 0
+  beta ~ normal(0, 10);                 // fixed-tau ridge prior
   u ~ normal(0, sigma);                  // log-frailties ~ normal(0, sigma^2)
-  target += log(sigma);                  // exponent M -> M-1, since 1'u = 0
 
-  // Cox log-partial likelihood (Breslow ties):
+  // Cox's partial likelihood: numerator sums the patient's intervals still at risk
   for (k in 1:N)
-    if (C[k] == 1)
-      target += eta[k] - log_sum_exp(eta[first[k]:N]);
+    if (C[k] == 1) {
+      real num = negative_infinity();
+      for (j in k:N)
+        if (pid[j] == pid[k])
+          num = log_sum_exp(num, eta[j]);
+      target += num - log_sum_exp(eta[k:N]);
+    }
 }
 generated quantities {
   vector[M] Z = exp(u);                  // Frailties
-  real sigma2 = square(sigma);           // log-frailty sd
+  real sigma2 = dot_self(u) / (M - 1);   // sigma^2 = u'u/(M-1)
 }
 
