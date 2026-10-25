@@ -48,14 +48,14 @@ fit <- stan(file = "../stan/frailty_cox_replication.stan",
             refresh = 0)
 ```
 ```{r fit_optimizing, message=FALSE, warning=FALSE, results="hide"}
-
+# Used for the MAP
 mode <- optimizing(stan_model("../stan/frailty_cox_replication.stan"),
                    data = stan_data,
                    seed = 1,
-                   iter = 100000)
+                   as_vector = FALSE)
 
-mode$par["sigma2"]
-round(mode$par[grep("^beta", names(mode$par))], 4)  # mode estimates of the coefficients
+mode$par$sigma2
+mode$par$beta
 ```
 
 ## Results
@@ -115,6 +115,25 @@ frail$diff <- frail$Z_stan - frail$Z_paper
 
 plot(frail$Z_paper, frail$Z_stan, pch = 19,
      xlab = "Paper Z (Table 1)", ylab = "Stan posterior median Z",
+     xlim = c(0, 3.2), ylim = c(0, 3.2))
+abline(0, 1, lty = 2)
+
+round(cor(frail$Z_paper, frail$Z_stan), 3)
+
+frail
+```
+```{r compare-frailties-optimizer, fig.width=5, fig.height=5}
+frail_paper <- unique(k[, c("id", "frail")])
+frail_paper <- frail_paper[order(frail_paper$id), ]
+
+frail <- data.frame(patient  = frail_paper$id,
+                    Z_paper  = frail_paper$frail,
+                    Z_stan   = mode$par$Z,
+                    row.names = NULL)
+frail$diff <- frail$Z_stan - frail$Z_paper
+
+plot(frail$Z_paper, frail$Z_stan, pch = 19,
+     xlab = "Paper Z (Table 1)", ylab = "Stan posterior mode Z",
      xlim = c(0, 3.2), ylim = c(0, 3.2))
 abline(0, 1, lty = 2)
 
