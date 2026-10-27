@@ -7,8 +7,6 @@ data {
   array[N] int<lower=1, upper=M> pid;    // patient_id for each interval
   matrix[N, P] X;                        // covariates- age,sex,disease type
   real<lower=0> sigma;                   // fixed log-frailty sd
-  real<lower=0> tau;                     // fixed prior sd of beta -
-                                         // arg incl. for sensitivity analysis
 }
 parameters {
   vector[P] beta;                        // regression coeffs
