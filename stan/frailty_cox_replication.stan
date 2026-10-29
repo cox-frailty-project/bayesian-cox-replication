@@ -17,7 +17,6 @@ transformed parameters {
 }
 model {
   // Priors
-  beta ~ normal(0, 10);                 // fixed-tau ridge prior
   u ~ normal(0, sigma);                  // log-frailties ~ normal(0, sigma^2)
 
   // Cox's partial likelihood: numerator sums the patient's intervals still at risk
@@ -34,4 +33,5 @@ generated quantities {
   vector[M] Z = exp(u);                  // Frailties
   real sigma2 = dot_self(u) / (M - 1);   // sigma^2 = u'u/(M-1)
 }
+
 
