@@ -10,7 +10,7 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 ```
 
-## Data
+# Data
 
 The `kidney` dataset from `survival`. The Stan model assumes rows are sorted by ascending time.
 
@@ -33,9 +33,10 @@ stan_data <- list(N   = nrow(k),
                   C   = k$status,
                   pid = k$id,
                   X   = X,
-                  tau = 10,
                   sigma = 1)
 ```
+
+# Sampling
 
 ## Fit
 
@@ -44,18 +45,9 @@ fit <- stan(file = "../stan/frailty_cox_replication.stan",
             data = stan_data,
             seed = 1,
             chains = 4,
-            iter = 5000,
+            iter = 50000,
+            thin = 4,
             refresh = 0)
-```
-```{r fit_optimizing, message=FALSE, warning=FALSE, results="hide"}
-# Used for the MAP
-mode <- optimizing(stan_model("../stan/frailty_cox_replication.stan"),
-                   data = stan_data,
-                   seed = 1,
-                   as_vector = FALSE)
-
-mode$par$sigma2
-mode$par$beta
 ```
 
 ## Results
@@ -63,17 +55,8 @@ mode$par$beta
 ```{r summary}
 print(fit, pars = c("beta"), probs = c(0.025, 0.5, 0.975))
 ```
-
 Paper values for comparison (McGilchrist & Aisbett 1991, Table 2): age 0.0063, sex -1.7947, GN 0.2062, AN 0.4099, PKD -1.2961, sigma^2 0.3821.
 
-```{r frailties}
-print(fit, pars = "Z", probs = c(0.025, 0.5, 0.975))
-```
-
-```{r diagnostics}
-traceplot(fit, pars = c("beta"))
-rstan::get_num_divergent(fit)
-```
 
 ## Comparison with McGilchrist & Aisbett (1991)
 
@@ -87,16 +70,13 @@ stan_res <- data.frame(parameter = paper$parameter,
                        stan_mean   = s[, "mean"],
                        stan_sd     = s[, "sd"],
                        stan_median = s[, "50%"],
-                       ci_lo       = s[, "2.5%"],
-                       ci_hi       = s[, "97.5%"],
                        rhat        = s[, "Rhat"],
                        n_eff       = s[, "n_eff"],
                        row.names = NULL)
 
 comp <- merge(paper, stan_res, by = "parameter", sort = FALSE)
 comp <- comp[match(paper$parameter, comp$parameter), ]
-comp$diff      <- comp$stan_mean - comp$estimate
-comp$paper_in_ci <- comp$estimate >= comp$ci_lo & comp$estimate <= comp$ci_hi
+comp$diff <- comp$stan_mean - comp$estimate
 
 comp
 ```
@@ -122,6 +102,43 @@ round(cor(frail$Z_paper, frail$Z_stan), 3)
 
 frail
 ```
+## Diagnostics 
+
+```{r diagnostics}
+traceplot(fit, pars = c("beta"))
+rstan::get_num_divergent(fit)
+```
+
+# Optimizer
+
+## Fit
+
+```{r fit_optimizing, message=FALSE, warning=FALSE, results="hide"}
+# Used for the MAP
+mode <- optimizing(stan_model("../stan/frailty_cox_replication.stan"),
+                   data = stan_data,
+                   seed = 1,
+                   as_vector = FALSE,
+                   hessian = TRUE,
+                   draws = 10000,
+                   importance_resampling = TRUE,
+                   algorithm='Newton')
+```
+
+## Results
+
+
+```{r summary - optimizer, message=FALSE, warning=FALSE, results="hide"}
+paper <- read.csv("../data/paper_table2.csv")
+
+map <- data.frame(parameter = paper$parameter,
+                  paper     = paper$estimate,
+                  MAP       = c(mode$par$beta, mode$par$sigma2))
+map$diff <- map$MAP - map$paper
+
+print(map)
+```
+
 ```{r compare-frailties-optimizer, fig.width=5, fig.height=5}
 frail_paper <- unique(k[, c("id", "frail")])
 frail_paper <- frail_paper[order(frail_paper$id), ]
@@ -141,3 +158,12 @@ round(cor(frail$Z_paper, frail$Z_stan), 3)
 
 frail
 ```
+
+## Diagonstics
+```{r diagnostics - optimizer}
+mode$return_code # 0 indicates successful convergence
+ev <- eigen(mode$hessian, symmetric = TRUE)$values
+all(ev < -1e-8) #TRUE -identifies a Strict local maximum
+
+```
+
