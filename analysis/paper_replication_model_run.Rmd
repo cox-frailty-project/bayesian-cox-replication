@@ -86,21 +86,21 @@ frail_paper <- unique(k[, c("id", "frail")])
 frail_paper <- frail_paper[order(frail_paper$id), ]
 
 Zs <- summary(fit, pars = "Z", probs = 0.5)$summary
-frail <- data.frame(patient  = frail_paper$id,
-                    Z_paper  = frail_paper$frail,
-                    Z_stan   = Zs[, "50%"],
-                    rhat     = Zs[, "Rhat"],
-                    row.names = NULL)
-frail$diff <- frail$Z_stan - frail$Z_paper
+frail_sampling <- data.frame(patient  = frail_paper$id,
+                             Z_paper  = frail_paper$frail,
+                             Z_stan   = Zs[, "50%"],
+                             rhat     = Zs[, "Rhat"],
+                             row.names = NULL)
+frail_sampling$diff <- frail_sampling$Z_stan - frail_sampling$Z_paper
 
-plot(frail$Z_paper, frail$Z_stan, pch = 19,
+plot(frail_sampling$Z_paper, frail_sampling$Z_stan, pch = 19,
      xlab = "Paper Z (Table 1)", ylab = "Stan posterior median Z",
      xlim = c(0, 3.2), ylim = c(0, 3.2))
 abline(0, 1, lty = 2)
 
-round(cor(frail$Z_paper, frail$Z_stan), 3)
+round(cor(frail_sampling$Z_paper, frail_sampling$Z_stan), 3)
 
-frail
+frail_sampling
 ```
 ## Diagnostics 
 
@@ -143,20 +143,33 @@ print(map)
 frail_paper <- unique(k[, c("id", "frail")])
 frail_paper <- frail_paper[order(frail_paper$id), ]
 
-frail <- data.frame(patient  = frail_paper$id,
-                    Z_paper  = frail_paper$frail,
-                    Z_stan   = mode$par$Z,
-                    row.names = NULL)
-frail$diff <- frail$Z_stan - frail$Z_paper
+frail_map <- data.frame(patient  = frail_paper$id,
+                        Z_paper  = frail_paper$frail,
+                        Z_stan   = mode$par$Z,
+                        row.names = NULL)
+frail_map$diff <- frail_map$Z_stan - frail_map$Z_paper
 
-plot(frail$Z_paper, frail$Z_stan, pch = 19,
+plot(frail_map$Z_paper, frail_map$Z_stan, pch = 19,
      xlab = "Paper Z (Table 1)", ylab = "Stan posterior mode Z",
      xlim = c(0, 3.2), ylim = c(0, 3.2))
 abline(0, 1, lty = 2)
 
-round(cor(frail$Z_paper, frail$Z_stan), 3)
+round(cor(frail_map$Z_paper, frail_map$Z_stan), 3)
 
-frail
+frail_map
+```
+
+```{r compare-frailties-both, fig.width=5, fig.height=5}
+plot_frailties <- function() {
+  plot(frail_sampling$Z_paper, frail_sampling$Z_stan, pch = 19, col = "blue",
+       xlab = "Paper Z (Table 1)", ylab = "Stan Z")
+  points(frail_map$Z_paper, frail_map$Z_stan, pch = 17, col = "red")
+  abline(0, 1, lty = 2)
+  legend("topleft", bty = "n",
+         legend = c("Posterior median (sampling)", "Posterior mode (optimizer)"),
+         col = c("blue", "red"), pch = c(19, 17))
+}
+plot_frailties()
 ```
 
 ## Diagonstics
@@ -164,6 +177,5 @@ frail
 mode$return_code # 0 indicates successful convergence
 ev <- eigen(mode$hessian, symmetric = TRUE)$values
 all(ev < -1e-8) #TRUE -identifies a Strict local maximum
-
 ```
 
