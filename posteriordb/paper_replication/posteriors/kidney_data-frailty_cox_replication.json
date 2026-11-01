@@ -1,0 +1,16 @@
+{
+  "name": "kidney_data-frailty_cox_replication",
+  "model_name": "frailty_cox_replication",
+  "data_name": "kidney_data",
+  "reference_posterior_name": null,
+  "dimensions": {
+    "shape": 1,
+    "log_scale_0": 1,
+    "betav": 5,
+    "u": 38,
+    "sigma": 1,
+    "tau": 1
+  },
+  "added_by": "Isac Kanon, Julius Searancke, Thauri Dattadeen",
+  "added_date": "2026-11-01"
+}
