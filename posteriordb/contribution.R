@@ -67,9 +67,6 @@ data_info <- as.pdb_data_info(list(
 pdb_data <- as.pdb_data(stan_data, info = data_info)
 info(pdb_data)
 
-
-#### Weibull Replication ####
-
 ### PosteriorDB model object
 
 ## Getting model
