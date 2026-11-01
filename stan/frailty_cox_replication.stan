@@ -3,7 +3,7 @@
 data {
   int<lower=1> M, N, P;                  // # of patients, total obs, # of covariates
   vector[N] t;                           // gap times, sorted ascending
-  array[N] int<lower=0, upper=1> C;      // 1 = infection, 0 = censored
+  array[N] int<lower=0, upper=1> D;      // 1 = uncensored, 0 = censored
   array[N] int<lower=1, upper=M> pid;    // patient_id for each interval
   matrix[N, P] X;                        // covariates- age,sex,disease type
   real<lower=0> sigma;                   // fixed log-frailty sd
@@ -21,7 +21,7 @@ model {
 
   // Cox's partial likelihood: numerator sums the patient's intervals still at risk
   for (k in 1:N)
-    if (C[k] == 1) {
+    if (D[k] == 1) {
       real num = negative_infinity();
       for (j in k:N)
         if (pid[j] == pid[k])
