@@ -24,30 +24,29 @@ options(mc.cores = parallel::detectCores())
   doi     = {10.2307/2532138}
 }"
 
-#### PosteriorDB Data Object (Same For Both) ####
+#### PosteriorDB Data Object####
 
 ## Data 
 
-## Importing it
-kidney
-k <- kidney
+k <- survival::kidney
+k <- k[order(k$time), ]
 
-## Covariates defined to match the paper: age in years, sex coded 1 = male, 2 = female,
-## 0/1 indicators for disease types GN, AN, PKD ("Other" is the baseline).
+# Covariates exactly as in the paper: age in years, sex coded 1 = male, 2 = female,
+# 0/1 indicators for disease types GN, AN, PKD (Other is the baseline).
 X <- cbind(age = k$age,
            sex = k$sex,
            GN  = as.integer(k$disease == "GN"),
            AN  = as.integer(k$disease == "AN"),
            PKD = as.integer(k$disease == "PKD"))
 
-## List format to align with the stan model
-stan_data <- list(N = length(k$id),
-                  M = length(unique(k$id)),
-                  P = ncol(X),
-                  t = k$time,
-                  C = k$status,
+stan_data <- list(N   = nrow(k),
+                  M   = length(unique(k$id)),
+                  P   = ncol(X),
+                  t   = k$time,
+                  D   = k$status,
                   pid = k$id,
-                  X = X)
+                  X   = X,
+                  sigma = 1)
 
 ## Data info
 
@@ -57,7 +56,7 @@ data_info <- as.pdb_data_info(list(
   name        = data_name,
   title       = "Kidney Survival Data",
   description = "Data on kidney catheter infections and their reaccurance times. From the survival package in r",
-  keywords    = c("survival", "kidney", "infection", "weibull"),
+  keywords    = c("survival", "kidney", "infection"),
   urls        = "https://search.r-project.org/CRAN/refmans/survival/html/kidney.html",
   references  = NULL,
   added_by    = "Isac Kanon, Julius Searancke, Thauri Dattadeen",
@@ -75,10 +74,10 @@ info(pdb_data)
 
 ## Getting model
 
-stan_path <- "stan/Weibull_v1.stan"
+stan_path <- "stan/frailty_cox_replication.stan"
 
 stan_code <- paste(
-  readLines(stan_path_wei),
+  readLines(stan_path),
   collapse = "\n"
 )
 
@@ -86,13 +85,13 @@ cat(stan_code)
 
 ## Model info
 
-model_name <- "weibull_frailty_model"
+model_name <- "frailty_cox_replication"
 
 model_info <- as.pdb_model_info(list(
-  name = model_name_wei,
-  title = "Weibull estimation for frailty term hazard regression",
-  description = "Weibull estimation of the frailty hazard regression formulated by C. A. McGilchrist and C. W. Aisbett (1991) for use with the Kidney dataset from the survival package in r",
-  keywords = c("hazard regression", "frailty", "weibull", "regression"),
+  name = model_name,
+  title = "Replication of Cox Frailty Partial Likelihood including Frailties",
+  description = "A stan replication of the model by C. A. McGilchrist and C. W. Aisbett (1991) for use with the Kidney dataset from the survival package in r",
+  keywords = c("hazard regression", "frailty", "survival analysis", "regression"),
   urls = c("https://doi.org/10.2307/2532138",
            "https://search.r-project.org/CRAN/refmans/survival/html/kidney.html"),
   references = "mcgilchrist1991regression", # From bibtex above
@@ -111,7 +110,7 @@ info(pdb_model)
 pdb_posterior <- as.pdb_posterior(list(
   pdb_model_code = pdb_model,
   pdb_data = pdb_data,
-  keywords = c("hazard regression", "frailty", "weibull", "regression", "survival", "kidney", "infection"),
+  keywords = c("hazard regression", "frailty", "survival analysis", "survival", "kidney", "infection"),
   urls = c("https://doi.org/10.2307/2532138",
            "https://search.r-project.org/CRAN/refmans/survival/html/kidney.html"),
   references = "mcgilchrist1991regression",
@@ -131,7 +130,7 @@ pdb_posterior <- as.pdb_posterior(list(
 ### PosteriorDB write
 
 Sys.setenv(
-  PDB_PATH = "~/posteriordb/weibull"
+  PDB_PATH = "/Users/my_files/Documents/GitHub/bayesian-cox-replication/posteriordb/paper_replication"
 )
 
 pdbl <- pdb_local()
