@@ -45,7 +45,7 @@ data/          Reference values transcribed from the paper (Table 2) + data note
 stan/          frailty_cox_replication.stan: the Stan model
 analysis/      paper_replication_model_run.Rmd: fits the model (NUTS + optimizer) and
                compares to the paper; frailties_comparison.png is the resulting figure
-posteriordb/   PosteriorDB contribution (model, data, posterior info, contribution.R)
+posteriordb/   PosteriorDB contribution (model, data + data-raw script, posterior info)
 report/        Final_project_BSDA.pdf: the written report
 ```
 

@@ -2,6 +2,7 @@
 McGilchrist-RegressionFrailtySurvival-1991.pdf
 project_work.pdf
 Project_proposal_step_2__BSDA.pdf
+jrsssb_34_2_187.pdf
 
 # R / RStudio
 .Rproj.user/
@@ -24,3 +25,6 @@ stan/*.cpp
 
 # macOS
 .DS_Store
+
+# Local working notes (not part of the repo)
+posteriordb/PR_GUIDE.md
