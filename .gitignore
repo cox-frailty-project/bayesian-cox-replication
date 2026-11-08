@@ -1,0 +1,26 @@
+# Copyrighted paper and course instructions: not ours to redistribute
+McGilchrist-RegressionFrailtySurvival-1991.pdf
+project_work.pdf
+Project_proposal_step_2__BSDA.pdf
+
+# R / RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# Rendered notebook output (regenerable)
+*.nb.html
+*.html
+*_files/
+model_run.pdf
+
+# Compiled Stan model cache
+*.rds
+stan/*.o
+stan/*.hpp
+stan/*.cpp
+
+# macOS
+.DS_Store

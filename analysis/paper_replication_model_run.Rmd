@@ -53,7 +53,7 @@ fit <- stan(file = "../stan/frailty_cox_replication.stan",
 ## Results
 
 ```{r summary}
-print(fit, pars = c("beta"), probs = c(0.025, 0.5, 0.975))
+print(fit, pars = c("beta"), probs = c(0.5))
 ```
 Paper values for comparison (McGilchrist & Aisbett 1991, Table 2): age 0.0063, sex -1.7947, GN 0.2062, AN 0.4099, PKD -1.2961, sigma^2 0.3821.
 
@@ -67,19 +67,23 @@ paper <- read.csv("../data/paper_table2.csv")
 
 s <- summary(fit, pars = c("beta", "sigma2"), probs = c(0.025, 0.5, 0.975))$summary
 stan_res <- data.frame(parameter = paper$parameter,
-                       stan_mean   = s[, "mean"],
-                       stan_sd     = s[, "sd"],
-                       stan_median = s[, "50%"],
+                       nuts_mean   = s[, "mean"],
+                       nuts_se     = s[, "sd"],
                        rhat        = s[, "Rhat"],
-                       n_eff       = s[, "n_eff"],
-                       row.names = NULL)
+                       n_eff       = s[, "n_eff"])
 
 comp <- merge(paper, stan_res, by = "parameter", sort = FALSE)
-comp <- comp[match(paper$parameter, comp$parameter), ]
-comp$diff <- comp$stan_mean - comp$estimate
 
 comp
 ```
+
+
+```{r}
+u_hat <- colMeans(as.matrix(fit, pars = "u"))
+sigma2_hat <- sum(u_hat^2) / (length(u_hat) - 1)
+sigma2_hat
+```
+
 
 ```{r compare-frailties, fig.width=5, fig.height=5}
 frail_paper <- unique(k[, c("id", "frail")])
@@ -127,7 +131,6 @@ mode <- optimizing(stan_model("../stan/frailty_cox_replication.stan"),
 
 ## Results
 
-
 ```{r summary - optimizer, message=FALSE, warning=FALSE, results="hide"}
 paper <- read.csv("../data/paper_table2.csv")
 
@@ -147,6 +150,7 @@ frail_map <- data.frame(patient  = frail_paper$id,
                         Z_paper  = frail_paper$frail,
                         Z_stan   = mode$par$Z,
                         row.names = NULL)
+
 frail_map$diff <- frail_map$Z_stan - frail_map$Z_paper
 
 plot(frail_map$Z_paper, frail_map$Z_stan, pch = 19,
@@ -162,12 +166,13 @@ frail_map
 ```{r compare-frailties-both, fig.width=5, fig.height=5}
 plot_frailties <- function() {
   plot(frail_sampling$Z_paper, frail_sampling$Z_stan, pch = 19, col = "blue",
-       xlab = "Paper Z (Table 1)", ylab = "Stan Z")
-  points(frail_map$Z_paper, frail_map$Z_stan, pch = 17, col = "red")
+       xlab = "Paper Frailties", ylab = "Replicated Frailties",
+       cex.lab = 1.4, cex.axis = 1.2, cex = 1.2)
+  points(frail_map$Z_paper, frail_map$Z_stan, pch = 17, col = "darkorange", cex = 1.2)
   abline(0, 1, lty = 2)
-  legend("topleft", bty = "n",
+  legend("topleft", bty = "n", cex = 1.2,
          legend = c("Posterior median (sampling)", "Posterior mode (optimizer)"),
-         col = c("blue", "red"), pch = c(19, 17))
+         col = c("blue", "darkorange"), pch = c(19, 17))
 }
 plot_frailties()
 ```
@@ -178,4 +183,3 @@ mode$return_code # 0 indicates successful convergence
 ev <- eigen(mode$hessian, symmetric = TRUE)$values
 all(ev < -1e-8) #TRUE -identifies a Strict local maximum
 ```
-

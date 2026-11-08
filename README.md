@@ -6,24 +6,26 @@ Project for *Bayesian Statistics and Data Analysis* (Uppsala University). See th
 
 ## Links
 
-- **Report (Overleaf, WIP):** https://www.overleaf.com/project/6ab2864eaeb612620349f6de
+- **Report:** [`report/Final_project_BSDA.pdf`](report/Final_project_BSDA.pdf) (Overleaf source: https://www.overleaf.com/project/6ab2864eaeb612620349f6de)
 - **Paper:** McGilchrist & Aisbett (1991), *Biometrics* 47(2), 461–466. [JSTOR](https://www.jstor.org/stable/2532138) · [doi:10.2307/2532138](https://doi.org/10.2307/2532138)
 - **Course project repo:** https://github.com/MansMeg/BSDA/
 - **Contributing to posteriorDB:** https://stan-dev.r-universe.dev/posteriordb/doc/contributing.html
 
 ## Data
 
-The `kidney` dataset from the R `survival` package: 38 patients, 76 recurrence intervals, with covariates age, sex and disease type (GN, AN, PKD, with Other as the baseline). Age is standardised before fitting.
+The `kidney` dataset from the R `survival` package: 38 patients, 76 recurrence intervals, with covariates age, sex and disease type (GN, AN, PKD, with Other as the baseline). Covariates are used exactly as in the paper: age in years, sex coded 1 = male / 2 = female, and 0/1 disease indicators. Reference values from the paper are in [`data/`](data/).
 
 ## Model
 
-Cox partial likelihood with Breslow handling of ties and a shared frailty per patient:
+Cox partial likelihood (Breslow handling of ties, observations sorted by time) with a shared log-frailty per patient, matching the setup in the paper:
 
 - `h_i(t) = h_0(t) · exp(xᵢᵀβ + u_{pid(i)})`
-- `β ~ Normal(0, τ²)` with fixed τ = 2.5
-- `u ~ Normal(0, σ²)`, constrained to sum to zero
-- `σ ~ Half-Normal(0, 1)`
+- `β`: flat (improper uniform) prior, as in the paper's penalised partial likelihood
+- `u ~ Normal(0, σ²)`, constrained to sum to zero, with σ fixed at 1 (passed in as data)
+- `σ²` is reported as the plug-in estimate `uᵀu / (M − 1)` in `generated quantities`, mirroring the paper's REML-style update
 - Frailties reported as `Z = exp(u)`, matching the paper's Table 1
+
+The model is in [`stan/frailty_cox_replication.stan`](stan/frailty_cox_replication.stan). The notebook fits it twice: with NUTS (posterior means/medians) and with the Newton optimizer (posterior mode / MAP, with Hessian-based standard errors), and compares both to the paper's Tables 1 and 2.
 
 ## Reproducing
 
@@ -31,19 +33,20 @@ Requires R with `rstan` and `survival`.
 
 ```r
 install.packages(c("rstan", "survival", "rmarkdown"))
-rmarkdown::render("analysis/model_run.Rmd")
+rmarkdown::render("analysis/paper_replication_model_run.Rmd")
 ```
 
-Fitting takes about a minute with four chains.
+Sampling runs 4 chains of 50,000 iterations (thinned by 4), which takes a few minutes; the optimizer run is near-instant.
 
 ## Repository layout
 
 ```
-data/          Data + Data sources
-stan/          Stan model
-posteriordb/   PosteriorDB contribution
-analysis/      R Markdown notebook that fits the model and compares to the paper
-report/        Written report
+data/          Reference values transcribed from the paper (Table 2) + data notes
+stan/          frailty_cox_replication.stan: the Stan model
+analysis/      paper_replication_model_run.Rmd: fits the model (NUTS + optimizer) and
+               compares to the paper; frailties_comparison.png is the resulting figure
+posteriordb/   PosteriorDB contribution (model, data, posterior info, contribution.R)
+report/        Final_project_BSDA.pdf: the written report
 ```
 
 ## Authors
